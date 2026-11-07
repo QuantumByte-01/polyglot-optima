@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polyglot-Optima — System Architecture & Training Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:    #1a1814;
+    --paper:  #faf9f7;
+    --muted:  #6b6760;
+    --rule:   #e2dfd9;
+    --blue:   #2563eb;
+    --blue-l: #eff4ff;
+    --green:  #16a34a;
+    --green-l:#f0fdf4;
+    --amber:  #d97706;
+    --amber-l:#fffbeb;
+    --red:    #dc2626;
+    --red-l:  #fef2f2;
+    --purple: #7c3aed;
+    --purple-l:#f5f3ff;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .blog {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+
+  /* ── Header ── */
+  .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--blue);
+    border: 1.5px solid var(--blue);
+    border-radius: 3px;
+    padding: 2px 8px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: 'Caveat', cursive;
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .subtitle {
+    font-size: 17px;
+    color: var(--muted);
+    margin-bottom: 48px;
+    max-width: 600px;
+    font-style: italic;
+  }
+  hr.divider {
+    border: none;
+    border-top: 1.5px solid var(--rule);
+    margin: 56px 0;
+  }
+
+  /* ── Section titles ── */
+  .section-title {
+    font-family: 'Caveat', cursive;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .06em;
+  }
+  .section-desc {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 36px;
+  }
+
+  /* ── Sketch box ── */
+  .box {
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    padding: 14px 18px;
+    background: #fff;
+    position: relative;
+  }
+  .box.dashed { border-style: dashed; border-color: var(--muted); }
+  .box.blue   { border-color: var(--blue);   background: var(--blue-l); }
+  .box.green  { border-color: var(--green);  background: var(--green-l); }
+  .box.amber  { border-color: var(--amber);  background: var(--amber-l); }
+  .box.red    { border-color: var(--red);    background: var(--red-l); }
+  .box.purple { border-color: var(--purple); background: var(--purple-l); }
+
+  .box-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .box-title {
+    font-family: 'Caveat', cursive;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .box-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── Arrow ── */
+  .arrow-down {
+    text-align: center;
+    font-size: 20px;
+    color: var(--muted);
+    line-height: 1;
+    margin: 8px 0;
+    font-family: monospace;
+  }
+  .arrow-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: .04em;
+    margin-top: -4px;
+    margin-bottom: 4px;
+  }
+
+  /* ════════════════════════════════════════
+     SECTION 1 — System Architecture
+  ════════════════════════════════════════ */
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Main column */
+  .arch-main { display: flex; flex-direction: column; gap: 0; }
+
+  .agent-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+
+  .env-server {
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    margin: 0;
+  }
+  .env-server-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .env-server-name {
+    font-family: 'Caveat', cursive;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  /* tools grid inside server */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .tool-chip {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 5px 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.3;
+  }
+  .tool-chip span {
+    display: block;
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  /* reward row */
+  .reward-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+  }
+  .reward-chip {
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 5px 6px;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: center;
+    line-height: 1.25;
+  }
+  .rc-speed  { border-color: var(--blue);   background: var(--blue-l);   color: var(--blue); }
+  .rc-correct{ border-color: var(--green);  background: var(--green-l);  color: var(--green); }
+  .rc-diag   { border-color: var(--purple); background: var(--purple-l); color: var(--purple); }
+  .rc-port   { border-color: var(--amber);  background: var(--amber-l);  color: var(--amber); }
+  .rc-self   { border-color: var(--red);    background: var(--red-l);    color: var(--red); }
+
+  /* side column */
+  .arch-side { display: flex; flex-direction: column; gap: 12px; }
+
+  .side-box {
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .side-box-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .side-box-title {
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .pill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+  }
+  .pill b { color: var(--blue); font-weight: 500; }
+
+  /* connector lines between layers */
+  .connector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+    position: relative;
+  }
+  .connector::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: var(--rule);
+    z-index: 0;
+  }
+  .conn-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--paper);
+    padding: 2px 8px;
+    border: 1px dashed var(--rule);
+    border-radius: 20px;
+    z-index: 1;
+    letter-spacing: .04em;
+  }
+
+  /* ════════════════════════════════════════
+     SECTION 2 — Training Workflow
+  ════════════════════════════════════════ */
+
+  .workflow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .wf-row {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    align-items: start;
+    gap: 0;
+  }
+
+  .wf-step-num {
+    font-family: 'Caveat', cursive;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--rule);
+    text-align: center;
+    padding-top: 10px;
+    user-select: none;
+  }
+
+  .wf-card {
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    padding: 18px 20px;
+    background: #fff;
+    margin-bottom: 0;
+  }
+  .wf-card:hover { border-color: var(--ink); }
+
+  .wf-card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .wf-card-title {
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .wf-card-body {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .wf-card-body strong { color: var(--ink); font-weight: 500; }
+
+  .wf-inner-row {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .wf-inner-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .wf-inner-row.cols-2 { grid-template-columns: 1fr 1fr; }
+
+  .mini-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .mini-chip .ch-label { color: var(--muted); font-size: 9px; display: block; }
+
+  .wf-vline {
+    width: 56px;
+    display: flex;
+    justify-content: center;
+    padding: 6px 0;
+  }
+  .wf-vline::after {
+    content: '';
+    display: block;
+    width: 1.5px;
+    height: 100%;
+    background: var(--rule);
+    min-height: 20px;
+  }
+
+  .loop-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border: 1.5px dashed var(--blue);
+    border-radius: 8px;
+    margin: 8px 0 0 56px;
+    background: var(--blue-l);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--blue);
+  }
+  .loop-arrow {
+    font-size: 16px;
+    transform: rotate(180deg);
+    display: inline-block;
+  }
+
+  /* ── Legend / footnotes ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    border: 1.5px solid currentColor;
+    flex-shrink: 0;
+  }
+
+  /* ── Annotation ── */
+  .anno {
+    font-family: 'Caveat', cursive;
+    font-size: 15px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* episode strip */
+  .episode-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .ep-round {
+    border: 1.5px solid var(--ink);
+    border-radius: 5px;
+    padding: 10px 12px;
+    background: var(--paper);
+    position: relative;
+  }
+  .ep-round-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .ep-round-title {
+    font-family: 'Caveat', cursive;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .ep-round-desc {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.4;
+  }
+  .ep-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+  .ep-badge.final { background: var(--ink); color: #fff; }
+
+  /* axis table */
+  .axis-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 10px;
+  }
+  .axis-table th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    padding: 3px 8px;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 400;
+  }
+  .axis-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    vertical-align: middle;
+  }
+  .axis-table tr:last-child td { border-bottom: none; }
+
+  .axis-bar-wrap {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .axis-seg {
+    width: 14px; height: 8px;
+    border-radius: 1px;
+    background: var(--rule);
+  }
+  .axis-seg.on { background: var(--blue); }
+</style>
+</head>
+<body>
+<article class="blog">
+
+  <!-- Header -->
+  <div class="badge">Technical Write-up · Polyglot-Optima</div>
+  <h1>System Architecture &amp;<br>Training Workflow</h1>
+  <p class="subtitle">An OpenEnv environment that trains a reasoning LLM to translate Python into hardware-aware optimized C++20 — beating GCC -O3 through closed-loop tool use and verifiable rewards.</p>
+
+  <hr class="divider">
+
+  <!-- ════════ SECTION 1 ════════ -->
+  <div class="section-num">01 / 02</div>
+  <div class="section-title">System Architecture</div>
+  <p class="section-desc">How the agent, environment server, tools, and reward rubrics are wired together at runtime.</p>
+
+  <div class="arch-grid">
+
+    <!-- Main column -->
+    <div class="arch-main">
+
+      <!-- Agent row -->
+      <div class="agent-row">
+        <div class="box blue">
+          <div class="box-label">Optimizer Model</div>
+          <div class="box-title">DeepSeek-R1-Distill-Qwen-7B</div>
+          <div class="box-sub">Reasoning trace → tool calls<br>Thinks in &lt;think&gt;…&lt;/think&gt; blocks</div>
+        </div>
+        <div class="box purple">
+          <div class="box-label">Generator Model</div>
+          <div class="box-title">Qwen2.5-Coder-1.5B</div>
+          <div class="box-sub">C++ code synthesis<br>Guided by optimizer strategy</div>
+        </div>
+      </div>
+
+      <!-- Connector -->
+      <div class="connector">
+        <span class="conn-tag">OptimizationAction { tool_name, tool_args, reasoning_trace }</span>
+        <span style="color:var(--muted);font-size:18px;z-index:1;">↕</span>
+        <span class="conn-tag">OptimizationObservation { reward, tool_result, state }</span>
+      </div>
+
+      <!-- OpenEnv Server -->
+      <div class="env-server">
+        <div class="env-server-title">OpenEnv Server · Gym-style API</div>
+        <div class="env-server-name">Polyglot-Optima Environment</div>
+
+        <!-- Tools -->
+        <div class="box-label" style="margin-bottom:6px;">9 MCP Tools</div>
+        <div class="tools-grid">
+          <div class="tool-chip">profile_python<span>hotspot analysis</span></div>
+          <div class="tool-chip">analyze_complexity<span>Big-O / FLOP</span></div>
+          <div class="tool-chip">check_memory<span>access patterns</span></div>
+          <div class="tool-chip">compile_and_benchmark<span>GCC -O3 vs agent</span></div>
+          <div class="tool-chip">verify_equivalence<span>fuzzing + checks</span></div>
+          <div class="tool-chip">check_portability<span>x86/ARM/RISC-V</span></div>
+          <div class="tool-chip">get_hardware_profile<span>roofline spec</span></div>
+          <div class="tool-chip">get_bottleneck_report<span>diagnosis signal</span></div>
+          <div class="tool-chip">submit_optimization<span>final round 3</span></div>
+        </div>
+
+        <!-- Rewards -->
+        <div class="box-label" style="margin-bottom:6px;margin-top:12px;">Reward DAG · 5 Rubrics</div>
+        <div class="reward-row">
+          <div class="reward-chip rc-speed">Speedup<br><small>Roofline-aware</small></div>
+          <div class="reward-chip rc-correct">Correctness<br><small>Fuzz-verified</small></div>
+          <div class="reward-chip rc-diag">Diagnosis<br><small>Trace quality</small></div>
+          <div class="reward-chip rc-port">Portability<br><small>Cross-arch</small></div>
+          <div class="reward-chip rc-self">Self-Correction<br><small>Round delta</small></div>
+        </div>
+      </div>
+
+      <!-- Connector down -->
+      <div class="connector" style="padding:10px 0;">
+        <span class="conn-tag">reset() / step() episodes · 3 rounds · 12 turns max</span>
+      </div>
+
+      <!-- Scenario layer -->
+      <div class="box dashed" style="padding:16px 18px;">
+        <div class="box-label" style="margin-bottom:8px;">Scenario Generation Layer</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div class="mini-chip"><span class="ch-label">Dataset Loader</span>HumanEval + synthetic Python fns</div>
+          <div class="mini-chip"><span class="ch-label">Hardware Profiles</span>8 synthetic specs · roofline bounds</div>
+          <div class="mini-chip"><span class="ch-label">Semantic Trap Lib</span>30 anti-gaming traps · AST rewrites</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Side column -->
+    <div class="arch-side">
+
+      <div class="side-box">
+        <div class="side-box-label">Adaptive Curriculum</div>
+        <div class="side-box-title">4-Axis Difficulty</div>
+        <p class="anno" style="margin-bottom:10px;">Updated per batch</p>
+        <table class="axis-table">
+          <thead><tr><th>Axis</th><th>Levels</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>function_tier</td>
+              <td><div class="axis-bar-wrap">
+                <div class="axis-seg on"></div><div class="axis-seg on"></div><div class="axis-seg on"></div><div class="axis-seg"></div>
+              </div></td>
+            </tr>
+            <tr>
+              <td>hardware_class</td>
+              <td><div class="axis-bar-wrap">
+                <div class="axis-seg on"></div><div class="axis-seg on"></div><div class="axis-seg"></div>
+              </div></td>
+            </tr>
+            <tr>
+              <td>fuzzer_strictness</td>
+              <td><div class="axis-bar-wrap">
+                <div class="axis-seg on"></div><div class="axis-seg"></div><div class="axis-seg"></div>
+              </div></td>
+            </tr>
+            <tr>
+              <td>portability_req</td>
+              <td><div class="axis-bar-wrap">
+                <div class="axis-seg on"></div><div class="axis-seg"></div>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="side-box" style="border-color:var(--red);background:var(--red-l);">
+        <div class="side-box-label">Anti-Gaming</div>
+        <div class="side-box-title">Trap Library</div>
+        <div class="pill-list">
+          <div class="pill"><b>30</b> adversarial traps</div>
+          <div class="pill"><b>AST</b> no-op rewrites</div>
+          <div class="pill"><b>Fuzz</b> + adversarial pass</div>
+          <div class="pill"><b>Category</b> adaptive resample</div>
+        </div>
+      </div>
+
+      <div class="side-box" style="border-color:var(--green);background:var(--green-l);">
+        <div class="side-box-label">Deployment</div>
+        <div class="side-box-title">Docker · HF Spaces</div>
+        <div class="pill-list">
+          <div class="pill">Port <b>7860</b> · FastAPI</div>
+          <div class="pill">Gym API: reset / step / state</div>
+          <div class="pill">MCP-compatible tool schema</div>
+        </div>
+      </div>
+
+      <div class="side-box">
+        <div class="side-box-label">Episode Structure</div>
+        <div class="side-box-title">3 Rounds</div>
+        <div class="pill-list">
+          <div class="pill">Round 1 — Explore &amp; diagnose</div>
+          <div class="pill">Round 2 — Refine strategy</div>
+          <div class="pill">Round 3 — <b>Final submit</b></div>
+        </div>
+        <p class="anno" style="margin-top:8px;">Reward only at terminal step</p>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ════════ SECTION 2 ════════ -->
+  <div class="section-num">02 / 02</div>
+  <div class="section-title">Training Workflow</div>
+  <p class="section-desc">GRPO-based reinforcement learning loop using TRL/Unsloth against the live OpenEnv server.</p>
+
+  <div class="workflow">
+
+    <!-- Step 1 -->
+    <div class="wf-row">
+      <div class="wf-step-num">1</div>
+      <div class="wf-card">
+        <div class="wf-card-label">Problem Sampling</div>
+        <div class="wf-card-title">Curriculum-Gated Problem Selection</div>
+        <div class="wf-card-body">
+          The <strong>dataset loader</strong> draws Python functions from HumanEval and a synthetic bank. Difficulty axes are frozen per episode from the adaptive curriculum state. With 15% probability, an <strong>adversarial trap</strong> is injected with category-weighted resampling from recent failure modes.
+        </div>
+        <div class="wf-inner-row cols-3" style="margin-top:12px;">
+          <div class="mini-chip"><span class="ch-label">Source</span>HumanEval + synthetic bank</div>
+          <div class="mini-chip"><span class="ch-label">Trap rate</span>~15% of episodes</div>
+          <div class="mini-chip"><span class="ch-label">Hardware</span>1 of 8 profiles sampled</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-row"><div class="wf-vline"></div><div></div></div>
+
+    <!-- Step 2 -->
+    <div class="wf-row">
+      <div class="wf-step-num">2</div>
+      <div class="wf-card">
+        <div class="wf-card-label">Episode Rollout</div>
+        <div class="wf-card-title">3-Round Iterative Refinement</div>
+        <div class="wf-card-body">
+          The agent receives the Python function + hardware profile via <code style="font-size:12px;background:var(--paper);padding:1px 4px;border-radius:3px;">env.reset()</code>, then executes up to <strong>12 tool calls</strong> across 3 rounds. Each round the agent may profile, compile, verify, and adjust strategy. Only the Round 3 <strong>submit_optimization</strong> call triggers reward computation.
+        </div>
+        <div class="episode-strip">
+          <div class="ep-round">
+            <div class="ep-round-num">Round 1</div>
+            <div class="ep-round-title">Explore</div>
+            <div class="ep-round-desc">Profile hotspots · analyze complexity · inspect memory access · get bottleneck report</div>
+          </div>
+          <div class="ep-round">
+            <div class="ep-round-num">Round 2</div>
+            <div class="ep-round-title">Refine</div>
+            <div class="ep-round-desc">Compile &amp; benchmark · verify equivalence · check portability · revise C++ strategy</div>
+          </div>
+          <div class="ep-round">
+            <div class="ep-round-num">Round 3</div>
+            <div class="ep-round-title">Submit</div>
+            <div class="ep-round-desc">Final compile · verify correctness · submit_optimization → terminal reward</div>
+            <span class="ep-badge final">terminal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-row"><div class="wf-vline"></div><div></div></div>
+
+    <!-- Step 3 -->
+    <div class="wf-row">
+      <div class="wf-step-num">3</div>
+      <div class="wf-card">
+        <div class="wf-card-label">Reward Computation</div>
+        <div class="wf-card-title">Composable Reward DAG</div>
+        <div class="wf-card-body">
+          At episode end, five rubrics are evaluated and summed with learned weights. Rewards are <strong>continuous</strong> — no hard 0/1 cliff. The <strong>Roofline-aware speedup</strong> score normalises performance relative to the hardware's compute/memory bound. Trap episodes gate reward on anti-gaming verification.
+        </div>
+        <div class="wf-inner-row cols-2">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div class="reward-chip rc-speed" style="text-align:left;padding:6px 10px;">Speedup · <small>speedup / roofline_ceiling · continuous 0→1</small></div>
+            <div class="reward-chip rc-correct" style="text-align:left;padding:6px 10px;">Correctness · <small>fuzz pass rate · rtol per function</small></div>
+            <div class="reward-chip rc-diag" style="text-align:left;padding:6px 10px;">Diagnosis · <small>reasoning trace vs ground-truth bottleneck</small></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div class="reward-chip rc-port" style="text-align:left;padding:6px 10px;">Portability · <small>compile pass across x86 / ARM / RISC-V</small></div>
+            <div class="reward-chip rc-self" style="text-align:left;padding:6px 10px;">Self-Correction · <small>speedup delta round-over-round</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-row"><div class="wf-vline"></div><div></div></div>
+
+    <!-- Step 4 -->
+    <div class="wf-row">
+      <div class="wf-step-num">4</div>
+      <div class="wf-card">
+        <div class="wf-card-label">Policy Update</div>
+        <div class="wf-card-title">GRPO via TRL + Unsloth</div>
+        <div class="wf-card-body">
+          Episode trajectories are batched and passed to <strong>Group Relative Policy Optimization (GRPO)</strong>. The reasoning trace inside <code style="font-size:12px;background:var(--paper);padding:1px 4px;border-radius:3px;">&lt;think&gt;…&lt;/think&gt;</code> blocks is treated as a latent RL signal — the <strong>DiagnosisRubric</strong> scores whether the trace correctly identifies the bottleneck. Unsloth provides memory-efficient fine-tuning with LoRA adapters.
+        </div>
+        <div class="wf-inner-row cols-3">
+          <div class="mini-chip"><span class="ch-label">Algorithm</span>GRPO (group relative)</div>
+          <div class="mini-chip"><span class="ch-label">Framework</span>TRL + Unsloth LoRA</div>
+          <div class="mini-chip"><span class="ch-label">Signal</span>&lt;think&gt; trace scored</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-row"><div class="wf-vline"></div><div></div></div>
+
+    <!-- Step 5 -->
+    <div class="wf-row">
+      <div class="wf-step-num">5</div>
+      <div class="wf-card">
+        <div class="wf-card-label">Curriculum Update</div>
+        <div class="wf-card-title">Adaptive 4-Axis Difficulty Adjustment</div>
+        <div class="wf-card-body">
+          After each training batch, the <strong>adaptive curriculum</strong> increments or decrements each difficulty axis based on recent episode outcomes. Axes advance when the rolling success rate exceeds threshold; trap category weights are resampled toward recent failure modes to prevent memorization.
+        </div>
+        <table class="axis-table" style="margin-top:10px;">
+          <thead><tr><th>Axis</th><th>Range</th><th>Advance condition</th></tr></thead>
+          <tbody>
+            <tr><td>function_tier</td><td>0 → 3</td><td>Correctness rate &gt; 0.75 over last 20 eps</td></tr>
+            <tr><td>hardware_class</td><td>0 → 2</td><td>Portability pass rate &gt; 0.6</td></tr>
+            <tr><td>fuzzer_strictness</td><td>0 → 2</td><td>Fuzz pass rate &gt; 0.8</td></tr>
+            <tr><td>portability_req</td><td>0 → 1</td><td>hardware_class ≥ 1 and port. rate &gt; 0.5</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Loop back -->
+    <div class="loop-indicator" style="margin-left:56px;">
+      <span class="loop-arrow">↻</span>
+      Loop back to Step 1 — new episodes sampled at updated difficulty axes until training budget exhausted
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- Legend -->
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="color:var(--blue)"></span>Model components</span>
+    <span class="legend-item"><span class="legend-dot" style="color:var(--green)"></span>Environment / server</span>
+    <span class="legend-item"><span class="legend-dot" style="color:var(--red)"></span>Anti-gaming</span>
+    <span class="legend-item"><span class="legend-dot" style="color:var(--purple)"></span>Reward signal</span>
+    <span class="legend-item"><span class="legend-dot" style="color:var(--amber)"></span>Curriculum / portability</span>
+  </div>
+  <p style="margin-top:12px;font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;">
+    Source: QuantumByte-01/Openenv-Hack-finale · polyglot_optima/ · OpenEnv Hackathon 2026
+  </p>
+
+</article>
+</body>
+</html>

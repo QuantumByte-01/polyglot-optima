@@ -1,21 +1,18 @@
-# Openenv-Hack-finale
+# Polyglot-Optima
 
-This repository contains the hackathon submission workspace for `Polyglot-Optima`, an OpenEnv environment focused on hardware-aware Python-to-C++ optimization.
+An [OpenEnv](https://github.com/meta-pytorch/OpenEnv) reinforcement-learning environment that trains LLMs to rewrite Python into hardware-aware, fuzz-verified C++. The reward is measured speedup, gated by correctness, with an adversarial trap library to catch reward hacking.
 
-## Main Project
+- **Project README, results and design:** [`polyglot_optima/README.md`](polyglot_optima/README.md)
+- **Live environment:** [Hugging Face Space](https://huggingface.co/spaces/Swastikr/polyglot_optima)
+- **Write-up:** [`polyglot_optima/HF_BLOG_WRITEUP.md`](polyglot_optima/HF_BLOG_WRITEUP.md)
+- **GRPO training notebook:** [`polyglot_optima/training/openenv_hackathon_training_colab_grpo_only.ipynb`](polyglot_optima/training/openenv_hackathon_training_colab_grpo_only.ipynb)
 
-- Submission package lives in `polyglot_optima`.
-- Environment card and checklist are in `polyglot_optima/README.md`.
-- Training notebook is in `polyglot_optima/training/openenv_hackathon_training.ipynb`.
+Built for the OpenEnv hackathon finale (April 2026).
 
-## Quick Start
+## Quick start
 
 ```bash
 cd polyglot_optima
+pip install -e .
 python -m pytest -q
 ```
-
-## Submission Notes
-
-- Judges should use the files under `polyglot_optima`.
-- Root-level `docs` is kept local-only and is not part of the GitHub submission package.

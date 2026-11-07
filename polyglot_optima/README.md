@@ -10,116 +10,181 @@ pinned: false
 
 # Polyglot-Optima
 
-Polyglot-Optima is an OpenEnv environment for training an LLM to translate Python functions into hardware-aware C++ that is both fast and correct.
+An OpenEnv environment that trains a reasoning LLM to rewrite naive Python into hardware-aware, fuzz-verified C++. Rewarded by **measured speedup**, gated by **bit-exact correctness**, stress-tested by a **30-scenario adversarial trap library**.
 
-## Problem
+🟢 **Live environment (Hugging Face Space):** [huggingface.co/spaces/Swastikr/polyglot_optima](https://huggingface.co/spaces/Swastikr/polyglot_optima)
+📝 **Full blog write-up:** [HF_BLOG_WRITEUP.md](HF_BLOG_WRITEUP.md)
 
-LLMs can generate optimized code, but often fail on edge-case correctness, portability, and anti-gaming behavior (fast but wrong outputs). This environment targets that gap with closed-loop tool use and verifiable rewards.
+---
 
-## Environment Design
+## Quickstart
 
-- **API shape:** Gym-style `reset`, `step`, `state`.
-- **3-round episodes:** iterative refinement, final submission at round 3.
-- **9 tools:** profiling, complexity analysis, memory analysis, compile+benchmark, equivalence verifier, portability checker, and final submit.
-- **Reward DAG:** composable rubrics for speedup, correctness, diagnosis quality, portability, and self-correction.
-- **Continuous rewards:** no hard 0/1 optimization cliff in the main learning path.
+### 1. Hit the deployed Space
 
-## Innovation Highlights
+```bash
+curl https://swastikr-polyglot-optima.hf.space/health
+# {"ok": true, "env": "polyglot-optima", ...}
+```
 
-1. **Adaptive 4-axis curriculum** updates global difficulty over batches.
-2. **Adversarial trap library** with category-focused adaptive resampling from recent failures.
-3. **Semantic trap variation** (AST-level no-op rewrites) to reduce memorization.
-4. **Roofline-aware speedup scoring** for hardware-grounded performance reward.
-5. **Anti-gaming verification** through fuzzing + adversarial pass checks.
+### 2. Run locally (Docker)
 
-## Why This Matters
+```bash
+git clone https://github.com/QuantumByte-01/polyglot-optima
+cd polyglot-optima/polyglot_optima
+docker build -t polyglot-optima .
+docker run -p 7860:7860 polyglot-optima
+# server up at http://localhost:7860
+```
 
-The target behavior is not just "compile and run", but robust optimization under realistic constraints: correctness under adversarial inputs, reasoning about bottlenecks, and hardware-aware strategy selection.
+### 3. Run locally (Python, no Docker)
 
-## Local Usage
+```bash
+git clone https://github.com/QuantumByte-01/polyglot-optima
+cd polyglot-optima/polyglot_optima
+pip install -e .
+python -m server.app   # uvicorn on port 7860
+```
+
+### 4. Train against it
+
+Open the notebook and run all cells (works on Colab, Kaggle, or HF Jobs):
+
+```
+training/openenv_hackathon_training_colab_grpo_only.ipynb
+```
+
+Defaults: `Qwen/Qwen2.5-Coder-7B-Instruct`, 4-bit `bitsandbytes`, PEFT/LoRA, GRPO via TRL.
+
+### 5. Smoke-test the LLM tool loop
+
+```bash
+python tests/smoke_llm_hf.py
+```
+
+### 6. Run the test suite
 
 ```bash
 python -m pytest -q
 python -m ruff check .
 ```
 
-Run smoke LLM integration:
+### Environment variables
 
-```bash
-python tests/smoke_llm_hf.py
-```
+Template at `.env.example`. None are required for local notebook execution.
 
-Cursor/OpenAI-compatible provider mode:
+- `HF_TOKEN`: only needed when uploading to HF Hub / Space
+- `WANDB_API_KEY`: only needed for experiment tracking
 
-```bash
-export LLM_PROVIDER=cursor
-export CURSOR_API_KEY=...
-export CURSOR_MODEL=gpt-4.1-nano
-python tests/smoke_llm_hf.py
-```
+---
 
-## Notebook Usage and HF Spaces
+## Why this problem
 
-You can use this environment directly in a local notebook without deploying to HF Spaces.
+Big code models can write code. They can't reliably write *fast* code that's also *correct* on a *specific* chip. Push any code-LLM at SIMD-tuned C++ and you'll see the same three failures:
 
-- **For development/training:** local usage is enough.
-- **For hackathon submission:** deploy to HF Spaces and link it in README per requirements.
+- Generic C++ with no SIMD and no awareness of cache lines or roofline.
+- Loop transforms that look right but fail one fuzz input in a thousand.
+- Hand it a `speedup` reward and it returns a constant.
 
-## Current Validation Snapshot
+There's no clean RL benchmark for hardware-aware code optimisation with verifiable correctness. Polyglot-Optima is our attempt at one.
 
-- Unit/integration tests passing.
-- Smoke integration path validates parseability/tool-loop behavior.
-- Reward and gate tests verify coherent scoring behavior.
+---
 
-## Results (Judge-facing)
+## How the environment works
 
-After running `training/openenv_hackathon_training_colab_grpo_only.ipynb`, add:
+Each episode hands the agent:
 
-- Reward distribution plot: `docs/plots/reward_distribution_baseline_vs_trained.png`
-- Correctness curve plot: `docs/plots/correctness_baseline_vs_trained.png`
-- Baseline vs trained metrics table (reward mean, correctness, compile rate, portability).
+- A **Python function** (template generator by default; CodeNet / TransCoder / Pyperformance / back-translated Polybench available behind a flag).
+- A **target hardware profile** (one of 8: x86 SSE4.2 / AVX2 / AVX-512, ARM NEON, scalar-only embedded).
+- A budget of **3 rounds, 12 tool calls**.
 
-## Required Submission Links
+The brief: rewrite this in C++ for this chip. Final submission triggers reward.
 
-Fill these links before final submission:
+### 9 MCP tools
 
-- **HF Space (environment URL judges will pull):** `TODO_ADD_HF_SPACE_URL`
-- **Training notebook (repo link):** `training/openenv_hackathon_training_colab_grpo_only.ipynb`
-- **Public Colab notebook (optional but recommended):** `TODO_ADD_COLAB_NOTEBOOK_URL`
-- **W&B run (or equivalent training evidence):** `TODO_ADD_WANDB_RUN_URL`
-- **Short writeup/video/slides (<2 min video or mini blog):** `TODO_ADD_STORY_URL`
-- **Hugging Face blog post markdown path in repo (if used):** `HF_BLOG_WRITEUP.md`
+| Tool | What it does |
+|---|---|
+| `profile_python_hotspots` | Where Python spends its time |
+| `analyze_complexity` | Big-O and FLOP counts |
+| `check_memory_access` | Flags non-contiguous / cache-hostile patterns |
+| `compile_and_benchmark` | Compiles the C++ and times it vs Python |
+| `verify_equivalence` | Fuzz-tests C++ vs Python at per-function `rtol` |
+| `check_portability` | Cross-compiles across the supported targets (x86 / ARM / scalar) |
+| `get_hardware_profile` | Roofline limits for the assigned chip |
+| `get_bottleneck_report` | Ground-truth bottleneck label |
+| `submit_optimization` | Round 3 only. Triggers terminal reward. |
 
-## Submission Checklist (Final)
+### 5-rubric reward DAG
 
-### Mandatory (from hackathon rules)
+- **Speedup**: measured runtime ratio, normalised by the chip's roofline.
+- **Correctness**: fuzz pass rate at the function's `rtol`.
+- **Diagnosis**: cosine similarity between the agent's `<think>` trace and the ground-truth bottleneck label.
+- **Portability**: cross-compile pass rate across x86, ARM NEON, and scalar.
+- **Self-Correction**: speedup delta between rounds.
 
-- [ ] OpenEnv environment is deployed to HF Space and the URL is in this README
-- [x] Valid OpenEnv manifest exists (`openenv.yaml`)
-- [x] Training pipeline exists using TRL/Unsloth
-- [ ] Real training evidence is included (loss/reward plots from an actual run)
-- [ ] README contains all judge-facing links (Space + training evidence + story asset)
+Rounds use smooth ramped gates (correctness ≥ 0.60 / 0.80 / 0.95). Episode reward = `0.3 × Round-1 + 0.7 × Round-3`. 15% of episodes are adversarial traps; their reward is zero unless a separate anti-gaming verifier passes.
 
-### Notebook and Reproducibility
+### Adaptive 4-axis curriculum
 
-- [ ] `training/openenv_hackathon_training_colab_grpo_only.ipynb` runs end-to-end without errors
-- [ ] Notebook execution produces visible output cells for metrics and plots
-- [ ] Notebook includes/prints final summary metrics (baseline vs trained)
-- [ ] Share at least one runnable training entry:
-  - [ ] Repo notebook link (`training/openenv_hackathon_training_colab_grpo_only.ipynb`), or
-  - [ ] Public Google Colab link
+Difficulty turns up as the agent improves, each axis on its own success-rate trigger:
 
-### Plots and Evidence Quality
+| Axis | Range | Advances when |
+|---|---|---|
+| `function_tier` | 0 → 3 | correctness > 0.75 over 20 episodes |
+| `hardware_class` | 0 → 2 | portability pass rate > 0.6 (x86 → x86 + ARM + scalar) |
+| `fuzzer_strictness` | 0 → 2 | fuzz pass rate > 0.8 |
+| `portability_req` | 0 → 1 | `hardware_class ≥ 1` and portability rate > 0.5 |
 
-- [ ] Key plots are committed and accessible in repo (`docs/plots/*.png` or `training_runs/...`)
-- [ ] Plot axes/titles are readable (step/episode vs reward/loss/metrics)
-- [ ] Baseline vs trained comparison table is present in README
-- [ ] Include one clear claim metric (for example compile-rate uplift or portability uplift)
+### Architecture and training workflow
 
-### Storytelling Assets
+![System architecture](docs/diagrams/architecture.png)
 
-- [ ] Add one short story asset and link it in README:
-  - [ ] HF mini-blog (markdown article stored in repo and linked), or
-  - [ ] <2 minute YouTube demo, or
-  - [ ] Short slide deck
-- [ ] Do not upload large video binaries into the env repo; link externally instead
+![Training workflow](docs/diagrams/workflow.png)
+
+---
+
+## Results
+
+Trained `Qwen/Qwen2.5-Coder-7B-Instruct` (4-bit, LoRA) with GRPO via TRL on a single GPU. These numbers come from a **300-step partial run**, not a converged training run.
+
+*The plots below are from the **first GRPO run** (W&B disabled, artefacts saved on the Space). A **second run** on the same model with full W&B telemetry is linked in the Results section.*
+
+![Training metrics grid](docs/plots/training_metrics_grid.png)
+
+| Component | Before | After 300 steps | Lift |
+|---|---|---|---|
+| `json_valid` (tool-call protocol) | 0.20 | 0.55 | ~2.7x |
+| `target_alignment` (uses requested ISA) | 0.20 | 0.55 | ~2.7x |
+| `submit_quality` (compiles, right entry point) | 0.10 | 0.22 | ~2.2x |
+| **Composite reward** | **0.6** | **1.5** | **~2.5x** |
+
+All three components rise together. If reward were getting hacked on one rubric, only one line would move. Full reasoning of the curves is in the [blog write-up](HF_BLOG_WRITEUP.md).
+
+---
+
+## Links
+
+All checked publicly accessible.
+
+**Submission-form URLs**
+
+- HF Space (the env URL): [huggingface.co/spaces/Swastikr/polyglot_optima](https://huggingface.co/spaces/Swastikr/polyglot_optima)
+- Training notebook URL: [`HF_BLOG_WRITEUP/training/openenv_hackathon_training_colab_grpo_only.ipynb`](https://huggingface.co/spaces/Swastikr/polyglot_optima/blob/main/training/openenv_hackathon_training_colab_grpo_only.ipynb)
+- Blog post URL: [`HF_BLOG_WRITEUP.md`](https://huggingface.co/spaces/Swastikr/polyglot_optima/blob/main/HF_BLOG_WRITEUP.md)
+
+**Project**
+
+- Source code (GitHub): [github.com/QuantumByte-01/polyglot-optima](https://github.com/QuantumByte-01/polyglot-optima)
+- Training notebook (in repo): [`training/openenv_hackathon_training_colab_grpo_only.ipynb`](training/openenv_hackathon_training_colab_grpo_only.ipynb)
+- Training notebook (Colab, second 7B run): [Open in Colab](https://colab.research.google.com/drive/1hQ490dc7GbLNiN4JjixB36-bl_W60Cpc?usp=sharing)
+- First-run artefacts (the curves shown above; W&B disabled): [`training_runs/partial-20260426-061351/`](https://huggingface.co/spaces/Swastikr/polyglot_optima/tree/main/training_runs/partial-20260426-061351)
+- Second-run W&B telemetry (same 7B model, W&B enabled): [`runs/axwh8hrb`](https://wandb.ai/swastik-r-900-iiitr/polyglot-optima/runs/axwh8hrb)
+- W&B project (all runs): [`swastik-r-900-iiitr/polyglot-optima`](https://wandb.ai/swastik-r-900-iiitr/polyglot-optima)
+- Architecture / workflow diagram sources (HTML + SVG, re-renderable): [`docs/diagrams/`](docs/diagrams/)
+
+**Stack**
+
+- OpenEnv: [github.com/meta-pytorch/OpenEnv](https://github.com/meta-pytorch/OpenEnv)
+- TRL: [huggingface.co/docs/trl](https://huggingface.co/docs/trl)
+- GRPO paper: [arxiv.org/abs/2402.03300](https://arxiv.org/abs/2402.03300)
+
+*No large video files in this repository; all visual / written assets are linked above as public URLs.*

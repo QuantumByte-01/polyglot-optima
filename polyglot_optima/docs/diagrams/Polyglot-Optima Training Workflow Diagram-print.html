@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Polyglot-Optima — Training Workflow (Print)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @page {
+    size: A3 portrait;
+    margin: 1cm;
+  }
+
+  body {
+    font-family: Inter, sans-serif;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 32px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  h2 {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: #6b7280;
+    margin-bottom: 3px; text-align: center;
+  }
+  h1 {
+    font-size: 18px; font-weight: 700; color: #111827;
+    margin-bottom: 14px; text-align: center;
+  }
+
+  .diagram {
+    display: block;
+    width: 900px;
+    height: auto;
+  }
+
+  .legend {
+    margin-top: 12px;
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+  }
+  .li { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #4b5563; }
+  .ld { width: 11px; height: 11px; border-radius: 2px; display: inline-block; border: 1.5px solid; flex-shrink: 0; }
+
+  footer {
+    margin-top: 8px; font-size: 10px; color: #9ca3af; text-align: center;
+  }
+
+  @media print {
+    body { padding: 0; }
+    .diagram { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h2>Polyglot-Optima · GRPO Training Loop</h2>
+<h1>Training Workflow Diagram</h1>
+
+<svg class="diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" font-family="Inter, sans-serif" font-size="11">
+
+<defs>
+  <marker id="ag"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#94a3b8"/></marker>
+  <marker id="ab"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2563eb"/></marker>
+  <marker id="agr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#16a34a"/></marker>
+  <marker id="ap"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#7c3aed"/></marker>
+  <marker id="aam" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#d97706"/></marker>
+  <marker id="ar"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#dc2626"/></marker>
+</defs>
+
+<!-- START -->
+<rect x="290" y="30" width="180" height="36" rx="18" fill="#111827" stroke="#111827"/>
+<text x="380" y="53" text-anchor="middle" fill="#fff" font-weight="600" font-size="12">START · Training Run</text>
+<line x1="380" y1="66" x2="380" y2="98" stroke="#111827" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- STEP 1 -->
+<rect x="170" y="100" width="420" height="60" rx="4" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<text x="380" y="120" text-anchor="middle" font-size="9" fill="#92400e" letter-spacing=".06">STEP 1 · PROBLEM SAMPLING</text>
+<text x="380" y="137" text-anchor="middle" font-weight="600" fill="#78350f">Dataset Loader + Curriculum State</text>
+<text x="380" y="152" text-anchor="middle" font-size="9.5" fill="#b45309">Draw Python fn · freeze difficulty axes · assign HW profile (1 of 8)</text>
+<line x1="380" y1="160" x2="380" y2="186" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- DIAMOND Trap inject? -->
+<polygon points="380,180 450,208 380,236 310,208" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<text x="380" y="204" text-anchor="middle" font-size="10" fill="#78350f" font-weight="600">Trap</text>
+<text x="380" y="218" text-anchor="middle" font-size="10" fill="#78350f" font-weight="600">inject?</text>
+<text x="390" y="258" font-size="9" fill="#16a34a" font-weight="600">NO (85%)</text>
+<text x="456" y="204" font-size="9" fill="#dc2626" font-weight="600">YES (15%)</text>
+<line x1="380" y1="236" x2="380" y2="268" stroke="#16a34a" stroke-width="1.3" marker-end="url(#agr)"/>
+<line x1="450" y1="208" x2="660" y2="208" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+<!-- Normal Instance -->
+<rect x="200" y="268" width="360" height="60" rx="4" fill="#f8fafc" stroke="#64748b" stroke-width="1.3"/>
+<text x="380" y="287" text-anchor="middle" font-size="9" fill="#475569" letter-spacing=".05">NORMAL PROBLEM INSTANCE</text>
+<text x="380" y="303" text-anchor="middle" font-weight="600" fill="#1e293b">Scenario Generator</text>
+<text x="380" y="319" text-anchor="middle" font-size="9.5" fill="#475569">function sampled · HW profile assigned · rtol set</text>
+
+<!-- Trap Library -->
+<rect x="662" y="168" width="216" height="100" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.3"/>
+<text x="770" y="187" text-anchor="middle" font-size="9" fill="#7f1d1d" letter-spacing=".05">TRAP LIBRARY</text>
+<text x="770" y="203" text-anchor="middle" font-weight="600" fill="#7f1d1d">trap_library.py</text>
+<text x="770" y="219" text-anchor="middle" font-size="9.5" fill="#991b1b">30 adversarial traps</text>
+<text x="770" y="235" text-anchor="middle" font-size="9" fill="#b91c1c">AST no-op rewrites</text>
+<text x="770" y="251" text-anchor="middle" font-size="9" fill="#b91c1c">category-weighted resample</text>
+<line x1="770" y1="268" x2="770" y2="328" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3"/>
+<line x1="770" y1="328" x2="562" y2="328" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+<line x1="380" y1="328" x2="380" y2="348" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#ag)"/>
+
+<!-- STEP 2 -->
+<rect x="200" y="350" width="360" height="58" rx="4" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<text x="380" y="369" text-anchor="middle" font-size="9" fill="#92400e" letter-spacing=".06">STEP 2 · EPISODE INIT</text>
+<text x="380" y="385" text-anchor="middle" font-weight="600" fill="#78350f">env.reset() → episode start</text>
+<text x="380" y="400" text-anchor="middle" font-size="9.5" fill="#b45309">Python fn + HW profile delivered to agent</text>
+<line x1="380" y1="408" x2="380" y2="435" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ab)"/>
+
+<!-- STEP 3 — Episode container -->
+<rect x="40" y="437" width="818" height="148" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="6 3"/>
+<text x="54" y="454" font-size="9" font-weight="700" letter-spacing=".07" fill="#2563eb">STEP 3 · 3-ROUND AGENT EPISODE  (max 12 tool calls)</text>
+
+<rect x="56" y="462" width="232" height="106" rx="4" fill="#fff" stroke="#2563eb" stroke-width="1.3"/>
+<text x="172" y="481" text-anchor="middle" font-size="9" fill="#1d4ed8" letter-spacing=".05">ROUND 1 · EXPLORE</text>
+<text x="172" y="497" text-anchor="middle" font-weight="600" fill="#1e3a8a">Diagnose Bottleneck</text>
+<text x="172" y="514" text-anchor="middle" font-size="9.5" fill="#2563eb">profile_python_hotspots</text>
+<text x="172" y="530" text-anchor="middle" font-size="9.5" fill="#2563eb">analyze_complexity</text>
+<text x="172" y="546" text-anchor="middle" font-size="9.5" fill="#2563eb">check_memory_access</text>
+<text x="172" y="562" text-anchor="middle" font-size="9.5" fill="#2563eb">get_bottleneck_report</text>
+
+<rect x="334" y="462" width="232" height="106" rx="4" fill="#fff" stroke="#2563eb" stroke-width="1.3"/>
+<text x="450" y="481" text-anchor="middle" font-size="9" fill="#1d4ed8" letter-spacing=".05">ROUND 2 · REFINE</text>
+<text x="450" y="497" text-anchor="middle" font-weight="600" fill="#1e3a8a">Compile &amp; Verify</text>
+<text x="450" y="514" text-anchor="middle" font-size="9.5" fill="#2563eb">compile_and_benchmark</text>
+<text x="450" y="530" text-anchor="middle" font-size="9.5" fill="#2563eb">verify_equivalence</text>
+<text x="450" y="546" text-anchor="middle" font-size="9.5" fill="#2563eb">check_portability</text>
+<text x="450" y="562" text-anchor="middle" font-size="9.5" fill="#2563eb">get_hardware_profile</text>
+
+<rect x="612" y="462" width="232" height="106" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="728" y="481" text-anchor="middle" font-size="9" fill="#14532d" letter-spacing=".05">ROUND 3 · SUBMIT</text>
+<text x="728" y="497" text-anchor="middle" font-weight="600" fill="#14532d">Final Submission</text>
+<text x="728" y="514" text-anchor="middle" font-size="9.5" fill="#16a34a">compile_and_benchmark</text>
+<text x="728" y="530" text-anchor="middle" font-size="9.5" fill="#16a34a">verify_equivalence</text>
+<text x="728" y="546" text-anchor="middle" font-size="9.5" fill="#16a34a">submit_optimization</text>
+<text x="728" y="562" text-anchor="middle" font-size="9.5" fill="#16a34a">← triggers terminal reward</text>
+
+<line x1="288" y1="515" x2="332" y2="515" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ab)"/>
+<line x1="566" y1="515" x2="610" y2="515" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ab)"/>
+<line x1="380" y1="585" x2="380" y2="612" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- DIAMOND Correct? -->
+<polygon points="380,610 464,634 380,658 296,634" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="380" y="630" text-anchor="middle" font-size="10" fill="#14532d" font-weight="600">Correct &amp;</text>
+<text x="380" y="644" text-anchor="middle" font-size="10" fill="#14532d" font-weight="600">verified?</text>
+<text x="390" y="682" font-size="9" fill="#16a34a" font-weight="600">YES</text>
+<text x="205" y="629" font-size="9" fill="#dc2626" font-weight="600">NO / trap fail</text>
+<line x1="380" y1="658" x2="380" y2="688" stroke="#16a34a" stroke-width="1.3" marker-end="url(#agr)"/>
+<line x1="296" y1="634" x2="160" y2="634" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+<!-- Penalty box -->
+<rect x="40" y="608" width="118" height="52" rx="4" fill="#fef2f2" stroke="#dc2626" stroke-width="1.3"/>
+<text x="99" y="626" text-anchor="middle" font-size="9" fill="#7f1d1d" letter-spacing=".05">ANTI-GAMING</text>
+<text x="99" y="642" text-anchor="middle" font-weight="600" fill="#991b1b">Penalty applied</text>
+<text x="99" y="656" text-anchor="middle" font-size="9" fill="#b91c1c">R penalised → 0</text>
+<line x1="99" y1="660" x2="99" y2="718" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3"/>
+<line x1="99" y1="718" x2="198" y2="718" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#ar)"/>
+
+<!-- STEP 4 Reward DAG -->
+<rect x="200" y="690" width="360" height="58" rx="4" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="380" y="710" text-anchor="middle" font-size="9" fill="#4c1d95" letter-spacing=".06">STEP 4 · REWARD DAG</text>
+<text x="380" y="726" text-anchor="middle" font-weight="600" fill="#2e1065">5-Rubric Composite Score R ∈ [0,1]</text>
+<text x="380" y="742" text-anchor="middle" font-size="9.5" fill="#6d28d9">Speed · Correctness · Diagnosis · Portability · Self-Correction</text>
+
+<rect x="200" y="752" width="62" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+<text x="231" y="769" text-anchor="middle" font-size="9" fill="#1d4ed8" font-weight="600">Speedup</text>
+<rect x="270" y="752" width="70" height="26" rx="3" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+<text x="305" y="769" text-anchor="middle" font-size="9" fill="#15803d" font-weight="600">Correctness</text>
+<rect x="348" y="752" width="64" height="26" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1"/>
+<text x="380" y="769" text-anchor="middle" font-size="9" fill="#5b21b6" font-weight="600">Diagnosis</text>
+<rect x="420" y="752" width="66" height="26" rx="3" fill="#fffbeb" stroke="#d97706" stroke-width="1"/>
+<text x="453" y="769" text-anchor="middle" font-size="9" fill="#b45309" font-weight="600">Portability</text>
+<rect x="494" y="752" width="66" height="26" rx="3" fill="#fef2f2" stroke="#dc2626" stroke-width="1"/>
+<text x="527" y="769" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="600">Self-Corr.</text>
+
+<line x1="380" y1="780" x2="380" y2="808" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- STEP 5 GRPO -->
+<rect x="170" y="810" width="420" height="76" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="380" y="830" text-anchor="middle" font-size="9" fill="#4c1d95" letter-spacing=".06">STEP 5 · POLICY UPDATE</text>
+<text x="380" y="847" text-anchor="middle" font-weight="600" fill="#2e1065">GRPO — Group Relative Policy Optimization</text>
+<text x="380" y="863" text-anchor="middle" font-size="9.5" fill="#4c1d95">TRL + Unsloth LoRA · episode trajectories batched</text>
+<text x="380" y="877" text-anchor="middle" font-size="9" fill="#6d28d9">&lt;think&gt; trace scored by DiagnosisRubric · weight update applied</text>
+
+<!-- GRPO detail annotation -->
+<rect x="730" y="810" width="152" height="90" rx="4" fill="#fff" stroke="#7c3aed" stroke-width="1"/>
+<text x="806" y="827" text-anchor="middle" font-size="9" fill="#4c1d95" font-weight="700">GRPO Details</text>
+<text x="740" y="843" font-size="9" fill="#374151">TRL + Unsloth LoRA</text>
+<text x="740" y="858" font-size="9" fill="#374151">Group-relative advantage</text>
+<text x="740" y="873" font-size="9" fill="#374151">&lt;think&gt; trace = RL signal</text>
+<text x="740" y="888" font-size="9" fill="#374151">Continuous R — no cliff</text>
+<line x1="590" y1="848" x2="728" y2="848" stroke="#7c3aed" stroke-width="1" stroke-dasharray="3 2"/>
+
+<line x1="380" y1="886" x2="380" y2="914" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- STEP 6 Curriculum -->
+<rect x="170" y="916" width="420" height="60" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+<text x="380" y="935" text-anchor="middle" font-size="9" fill="#14532d" letter-spacing=".06">STEP 6 · CURRICULUM UPDATE</text>
+<text x="380" y="951" text-anchor="middle" font-weight="600" fill="#14532d">Adaptive 4-Axis Difficulty Adjustment</text>
+<text x="380" y="966" text-anchor="middle" font-size="9.5" fill="#15803d">fn_tier · hw_class · fuzzer_strictness · portability_req advanced per batch</text>
+
+<!-- Curriculum axis annotation -->
+<rect x="730" y="916" width="152" height="90" rx="4" fill="#fff" stroke="#16a34a" stroke-width="1"/>
+<text x="806" y="933" text-anchor="middle" font-size="9" fill="#14532d" font-weight="700">Axis Ranges</text>
+<text x="740" y="950" font-size="9" fill="#374151">fn_tier: 0 → 3</text>
+<text x="740" y="965" font-size="9" fill="#374151">hw_class: 0 → 2</text>
+<text x="740" y="980" font-size="9" fill="#374151">fuzz: 0 → 2</text>
+<text x="740" y="995" font-size="9" fill="#374151">port_req: 0 → 1</text>
+<line x1="590" y1="946" x2="728" y2="946" stroke="#16a34a" stroke-width="1" stroke-dasharray="3 2"/>
+
+<line x1="380" y1="976" x2="380" y2="1003" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- DIAMOND Budget exhausted? -->
+<polygon points="380,1003 464,1025 380,1047 296,1025" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="380" y="1021" text-anchor="middle" font-size="10" fill="#4c1d95" font-weight="600">Budget</text>
+<text x="380" y="1035" text-anchor="middle" font-size="10" fill="#4c1d95" font-weight="600">exhausted?</text>
+
+<!-- YES → END -->
+<text x="472" y="1021" font-size="9" fill="#111827" font-weight="600">YES</text>
+<line x1="464" y1="1025" x2="590" y2="1025" stroke="#111827" stroke-width="1.5" marker-end="url(#ag)"/>
+<rect x="592" y="1007" width="100" height="36" rx="18" fill="#111827" stroke="#111827"/>
+<text x="642" y="1030" text-anchor="middle" fill="#fff" font-weight="600" font-size="12">END</text>
+
+<!-- NO → loop back left rail -->
+<text x="235" y="1021" font-size="9" fill="#7c3aed" font-weight="600">NO</text>
+<line x1="296" y1="1025" x2="54" y2="1025" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ag)"/>
+<line x1="54" y1="1025" x2="54" y2="129" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6 4"/>
+<line x1="54" y1="129" x2="168" y2="129" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ap)"/>
+<text x="30" y="580" text-anchor="middle" font-size="9" fill="#7c3aed" transform="rotate(-90,30,580)">Next batch · updated weights + curriculum</text>
+
+</svg>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:#fffbeb;border-color:#d97706"></div>Sampling / Curriculum</div>
+  <div class="li"><div class="ld" style="background:#eff6ff;border-color:#2563eb"></div>Episode / Agent</div>
+  <div class="li"><div class="ld" style="background:#f5f3ff;border-color:#7c3aed"></div>Reward / GRPO</div>
+  <div class="li"><div class="ld" style="background:#f0fdf4;border-color:#16a34a"></div>Success path</div>
+  <div class="li"><div class="ld" style="background:#fef2f2;border-color:#dc2626"></div>Anti-gaming / trap</div>
+  <div class="li">
+    <svg width="28" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="5 3"/><polygon points="20,3 28,6 20,9" fill="#7c3aed"/></svg>
+    Feedback loop
+  </div>
+</div>
+<footer>QuantumByte-01/Openenv-Hack-finale · polyglot_optima/ · Training Workflow</footer>
+
+<script>
+  document.fonts.ready.then(function() {
+    setTimeout(function() { window.print(); }, 500);
+  });
+</script>
+</body>
+</html>
